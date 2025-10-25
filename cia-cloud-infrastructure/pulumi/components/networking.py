@@ -84,3 +84,34 @@ def create_network():
             )
         ]
     )
+
+
+    # Regla: Permitir tráfico HTTP y HTTPS desde internet
+    web_traffic = compute.Firewall(
+        "allow-web-traffic",
+        name="allow-web-traffic",
+        description="Permitir tráfico HTTP y HTTPS desde internet",
+        network=main_vpc.id,
+        source_ranges=["0.0.0.0/0"],  # Desde cualquier lugar
+        allows=[
+            compute.FirewallAllowArgs(
+                protocol="tcp",
+                ports=["80", "443"]  # HTTP y HTTPS
+            )
+        ]
+    )
+
+    # Regla: Permitir puertos específicos para el servidor Ubiq
+    ubiq_traffic = compute.Firewall(
+        "allow-ubiq-traffic",
+        name="allow-ubiq-traffic",
+        description="Permitir tráfico para servidor Ubiq (MetaQuest)",
+        network=main_vpc.id,
+        source_ranges=["0.0.0.0/0"],
+        allows=[
+            compute.FirewallAllowArgs(
+                protocol="tcp",
+                ports=["8009", "8010", "8011"]  # Puertos del servidor Ubiq
+            )
+        ]
+    )
