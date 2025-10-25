@@ -1,10 +1,11 @@
-"""A Google Cloud Python Pulumi program"""
-
 import pulumi
-from pulumi_gcp import storage
+from components import networking
 
-# Create a GCP resource (Storage Bucket)
-bucket = storage.Bucket('my-bucket', location="US")
+# Crear la infraestructura de red
+network = networking.create_network()
 
-# Export the DNS name of the bucket
-pulumi.export('bucket_name', bucket.url)
+# Exportar información importante para referencia
+pulumi.export("vpc_name", network["vpc"].name)
+pulumi.export("subnet_name", network["subnet"].name)
+pulumi.export("subnet_region", network["subnet"].region)
+pulumi.export("vpc_id", network["vpc"].id)
