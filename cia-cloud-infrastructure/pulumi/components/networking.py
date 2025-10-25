@@ -142,3 +142,15 @@ def create_network():
         tcp_transitory_idle_timeout=300,    # 5 minutos
         udp_idle_timeout=300                # 5 minutos
     )
+
+    # Retornar todos los recursos creados para que otros módulos los usen
+    return {
+        "vpc": main_vpc,
+        "subnet": main_subnet,
+        "internal_firewall": internal_traffic,
+        "ssh_firewall": ssh_traffic,
+        "web_firewall": web_traffic,
+        "ubiq_firewall": ubiq_traffic,
+        "nat_router": nat_router,
+        "cloud_nat": cloud_nat
+    }
