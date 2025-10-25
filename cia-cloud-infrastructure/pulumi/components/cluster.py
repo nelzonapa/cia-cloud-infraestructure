@@ -110,3 +110,41 @@ def create_cluster(network):
             "maximum": "4GB"
         }
     )
+
+
+    # 4. CREAR UN NODE POOL INICIAL (mínimo para que funcione el cluster)
+    initial_node_pool = container.NodePool(
+        "initial-node-pool",
+        name="initial-pool",
+        cluster=cluster.name,
+        location=region,
+        initial_node_count=1,
+        node_config={
+            "preemptible": True,  # Instancias que pueden ser terminadas (más baratas)
+            "machine_type": "e2-small",
+            "disk_size_gb": 20,
+            "disk_type": "pd-standard",
+            "service_account": cluster_service_account.email,
+            "oauth_scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+            ],
+            "labels": {
+                "workload": "system"
+            }
+        },
+        management={
+            "auto_repair": True,
+            "auto_upgrade": True
+        },
+        autoscaling={
+            "min_node_count": 1,
+            "max_node_count": 3
+        }
+    )
+
+    # Retornar los recursos creados
+    return {
+        "cluster": cluster,
+        "service_account": cluster_service_account,
+        "initial_node_pool": initial_node_pool
+    }
