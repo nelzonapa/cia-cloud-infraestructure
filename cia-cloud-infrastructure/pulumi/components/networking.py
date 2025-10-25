@@ -45,3 +45,42 @@ def create_network():
             metadata="INCLUDE_ALL_METADATA"
         )
     )
+
+    # 3. CREAR REGLAS DE FIREWALL
+    # Regla: Permitir tráfico interno entre nodos del cluster
+    internal_traffic = compute.Firewall(
+        "allow-internal-traffic",
+        name="allow-internal-traffic",
+        description="Permitir tráfico interno entre nodos del cluster",
+        network=main_vpc.id,
+        # Permitir todo el tráfico dentro de la VPC
+        source_ranges=["10.0.0.0/16"],
+        allows=[
+            compute.FirewallAllowArgs(
+                protocol="tcp",
+                ports=["0-65535"]  # Todos los puertos TCP
+            ),
+            compute.FirewallAllowArgs(
+                protocol="udp", 
+                ports=["0-65535"]  # Todos los puertos UDP
+            ),
+            compute.FirewallAllowArgs(
+                protocol="icmp"  # Para ping/diagnóstico
+            )
+        ]
+    )
+
+    # Regla: Permitir tráfico SSH para administración
+    ssh_traffic = compute.Firewall(
+        "allow-ssh",
+        name="allow-ssh",
+        description="Permitir conexiones SSH para administración",
+        network=main_vpc.id,
+        source_ranges=["0.0.0.0/0"],  # Desde cualquier lugar (¡cuidado en producción!)
+        allows=[
+            compute.FirewallAllowArgs(
+                protocol="tcp",
+                ports=["22"]  # Solo puerto SSH
+            )
+        ]
+    )
