@@ -1,0 +1,28 @@
+# Directorios y archivos generados automáticamente por Pulumi
+node_modules/
+package-lock.json
+yarn.lock
+.pulumi/
+.nyc_output/
+coverage/
+
+# Entornos virtuales de Python (el 'venv' que creamos)
+venv/
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+.pytest_cache/
+
+# Credenciales y archivos de configuración del usuario
+.boto
+.bash_history
+.gcloud/
+# Archivos de configuración de Pulumi y Secrets que NO deben ir al repositorio
+Pulumi.*.yaml
+!Pulumi.yaml
+!Pulumi.dev.yaml
+
+# Logs y archivos temporales
+*.log
+tmp/
