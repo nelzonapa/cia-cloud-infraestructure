@@ -115,3 +115,30 @@ def create_network():
             )
         ]
     )
+
+
+    # 4. CREAR CLOUD NAT PARA CONECTIVIDAD SALIENTE
+    # Primero, creamos un router para el NAT
+    nat_router = compute.Router(
+        "nat-router",
+        name="nat-router",
+        description="Router para Cloud NAT",
+        network=main_vpc.id,
+        region=region
+    )
+
+    # Luego, creamos el Cloud NAT
+    cloud_nat = compute.RouterNat(
+        "cloud-nat",
+        name="cloud-nat",
+        router=nat_router.name,
+        region=region,
+        # Configurar el NAT para usar IPs automáticas
+        nat_ip_allocate_option="AUTO_ONLY",
+        # Habilitar NAT para todas las subredes
+        source_subnetwork_ip_ranges_to_nat="ALL_SUBNETWORKS_ALL_IP_RANGES",
+        # Configurar timeouts de TCP
+        tcp_established_idle_timeout=1200,  # 20 minutos
+        tcp_transitory_idle_timeout=300,    # 5 minutos
+        udp_idle_timeout=300                # 5 minutos
+    )
