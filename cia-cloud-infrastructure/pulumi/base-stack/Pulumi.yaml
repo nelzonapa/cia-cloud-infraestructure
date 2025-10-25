@@ -1,0 +1,11 @@
+name: cia-cloud-infrastructure
+description: '"Infraestructura cloud con autoscaling para CIA Project"'
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: gcp-python
