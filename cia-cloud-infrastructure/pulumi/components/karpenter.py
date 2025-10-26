@@ -78,3 +78,48 @@ def setup_karpenter(cluster, k8s_provider):
         ),
         opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[workload_identity])
     )
+
+
+    # 5. CREAR UN PROVISIONER (define CÓMO Karpenter crea nodos)
+    provisioner = pulumi_kubernetes.apiextensions.CustomResource(
+        "karpenter-provisioner",
+        api_version="karpenter.sh/v1alpha5",
+        kind="Provisioner",
+        metadata={
+            "name": "default",
+            "namespace": "karpenter",
+        },
+        spec={
+            "requirements": [
+                {
+                    "key": "node.kubernetes.io/instance-type",
+                    "operator": "In",
+                    "values": ["e2-small", "e2-medium", "e2-standard-2"]
+                },
+                {
+                    "key": "topology.kubernetes.io/zone", 
+                    "operator": "In",
+                    "values": ["us-central1-a", "us-central1-b", "us-central1-c"]
+                }
+            ],
+            "limits": {
+                "resources": {
+                    "cpu": 100,  # Máximo 100 CPUs en total
+                    "memory": "100Gi"  # Máximo 100GB de memoria
+                }
+            },
+            "providerRef": {
+                "name": "default"
+            },
+            "ttlSecondsAfterEmpty": 30,  # Eliminar nodos después de 30 segundos vacíos
+            "ttlSecondsUntilExpired": 604800,  # Rotar nodos después de 7 días
+        },
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[karpenter_release])
+    )
+
+    # Retornar los recursos creados
+    return {
+        "service_account": karpenter_service_account,
+        "karpenter_release": karpenter_release,
+        "provisioner": provisioner
+    }
