@@ -58,6 +58,10 @@ def create_cluster(network):
         # Configuración de red
         network=network["vpc"].name,
         subnetwork=network["subnet"].name,
+
+        workload_identity_config={
+            "workload_pool": f"{project}.svc.id.goog",
+        },
         
         # Configuración de IPs privadas (más seguro)
         private_cluster_config={
@@ -72,9 +76,13 @@ def create_cluster(network):
             "oauth_scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
             ],
-            "machine_type": "e2-small",  # Máquina económica para inicio
-            "disk_size_gb": 20,
+            "machine_type": "e2-small",  
+            "disk_size_gb": 20, 
             "disk_type": "pd-standard",
+            # Habilitar la metadata para Workload Identity
+            "workload_metadata_config": {
+                "mode": "GKE_METADATA"
+            },
         },
         
         # Habilitar auto-scaling del control plane
@@ -122,7 +130,11 @@ def create_cluster(network):
             ],
             "labels": {
                 "workload": "system"
-            }
+            },
+            # Habilitar la metadata para Workload Identity en el Node Pool (¡DUPLICAR!)
+            "workload_metadata_config": {
+                "mode": "GKE_METADATA"
+            },
         },
         management={
             "auto_repair": True,
