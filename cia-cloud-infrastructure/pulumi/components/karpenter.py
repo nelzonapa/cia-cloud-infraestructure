@@ -39,4 +39,42 @@ def setup_karpenter(cluster, k8s_provider):
         )
     )
 
+    # 3. CONFIGURAR WORKLOAD IDENTITY (para que Karpenter en Kubernetes use esta cuenta)
+    workload_identity = projects.IAMMember(
+        "karpenter-workload-identity",
+        project=project,
+        role="roles/iam.workloadIdentityUser",
+        member=karpenter_service_account.email.apply(
+            lambda email: f"serviceAccount:{project}.svc.id.goog[karpenter/karpenter]"
+        )
+    )
 
+
+    # 4. INSTALAR KARPENTER USANDO HELM CHART
+    karpenter_release = Release(
+        "karpenter",
+        ReleaseArgs(
+            chart="karpenter",
+            version="v0.36.1",  # Versión específica para estabilidad
+            repository_opts=RepositoryOptsArgs(
+                repo="https://charts.karpenter.sh"
+            ),
+            namespace="karpenter",
+            create_namespace=True,
+            values={
+                "serviceAccount": {
+                    "create": False,
+                    "name": karpenter_service_account.account_id,
+                    "annotations": {
+                        "iam.gke.io/gcp-service-account": karpenter_service_account.email
+                    }
+                },
+                "controller": {
+                    "clusterName": cluster.name,
+                    "clusterEndpoint": cluster.endpoint,
+                },
+                "aws": {}  # Karpenter soporta AWS, pero aquí lo deshabilitamos
+            }
+        ),
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[workload_identity])
+    )
