@@ -1,5 +1,7 @@
 """Módulo de Karpenter para auto-scaling automático de nodos."""
 import pulumi
+import pulumi_kubernetes
+
 from pulumi_gcp import serviceaccount, projects
 from pulumi_kubernetes import provider as kubernetes_provider
 from pulumi_kubernetes.helm.v3 import Release, ReleaseArgs, RepositoryOptsArgs
@@ -7,8 +9,8 @@ from pulumi_kubernetes.helm.v3 import Release, ReleaseArgs, RepositoryOptsArgs
 def setup_karpenter(cluster, k8s_provider):
     """Configura Karpenter para auto-scaling automático de nodos."""
     
-    config = pulumi.Config()
-    project = config.require("project")
+    from pulumi_gcp import config as gcp_config
+    project = gcp_config.project
     
     # 1. CREAR UNA CUENTA DE SERVICIO PARA KARPENTER
     karpenter_service_account = serviceaccount.Account(
@@ -52,13 +54,11 @@ def setup_karpenter(cluster, k8s_provider):
 
     # 4. INSTALAR KARPENTER USANDO HELM CHART
     karpenter_release = Release(
-        "karpenter",
+        "karpenter-release",
         ReleaseArgs(
-            chart="karpenter",
-            version="v0.36.1",  # Versión específica para estabilidad
-            repository_opts=RepositoryOptsArgs(
-                repo="https://charts.karpenter.sh"
-            ),
+            chart="oci://public.ecr.aws/karpenter/karpenter",
+            version="0.36.1",  
+            # repository_opts ya no es necesario
             namespace="karpenter",
             create_namespace=True,
             values={
