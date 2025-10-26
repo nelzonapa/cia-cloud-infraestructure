@@ -5,9 +5,12 @@ from pulumi_gcp import container, serviceaccount, projects
 def create_cluster(network):
     """Crea un cluster GKE con auto-scaling configurado."""
     
-    config = pulumi.Config()
-    project = config.require("project")
-    region = config.require("region")
+    #config = pulumi.Config()
+    from pulumi_gcp import config as gcp_config
+    #project = config.require("project")
+    project = gcp_config.project
+    #region = config.require("region")
+    region = gcp_config.region
     
     # 1. CREAR UNA CUENTA DE SERVICIO PARA EL CLUSTER
     cluster_service_account = serviceaccount.Account(

@@ -5,9 +5,12 @@ from pulumi_gcp import compute
 def create_network():
     """Crea la infraestructura de red: VPC, subred, firewall y NAT."""
     # Configuración
-    config = pulumi.Config() # lee configuración, obtiene lo mismo del comando "pulumi config"
-    project = config.require("project") #id proyecto
-    region = config.require("region") #region de proyecto
+    # config = pulumi.Config() # lee configuración, obtiene lo mismo del comando "pulumi config"
+    from pulumi_gcp import config as gcp_config
+    #project = config.require("project") #id proyecto
+    project = gcp_config.project
+    #region = config.require("region") #region de proyecto
+    region = gcp_config.region
 
     # 1. CREAR LA VPC (RED PRINCIPAL)
     """
