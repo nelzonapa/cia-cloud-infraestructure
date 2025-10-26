@@ -25,7 +25,8 @@ def create_cluster(network):
     compute_editor = projects.IAMMember(
         "cluster-compute-editor",
         project=project,
-        role="roles/compute.editor",
+        #role="roles/compute.editor",
+        role="roles/compute.instanceAdmin.v1",
         member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
     )
     
