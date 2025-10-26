@@ -100,20 +100,6 @@ def create_cluster(network):
         release_channel={
             "channel": "REGULAR"  # Canal estable
         },
-        
-        # Resource limits para el control plane
-        resource_limits=[
-            {
-                "resource_type": "cpu",
-                "minimum": "1",
-                "maximum": "2"
-            },
-            {
-                "resource_type": "memory", 
-                "minimum": "2GB",
-                "maximum": "4GB"
-            }
-        ],
     )
 
 

@@ -140,10 +140,6 @@ def create_network():
         nat_ip_allocate_option="AUTO_ONLY",
         # Habilitar NAT para todas las subredes
         source_subnetwork_ip_ranges_to_nat="ALL_SUBNETWORKS_ALL_IP_RANGES",
-        # Configurar timeouts de TCP
-        tcp_established_idle_timeout=1200,  # 20 minutos
-        tcp_transitory_idle_timeout=300,    # 5 minutos
-        udp_idle_timeout=300                # 5 minutos
     )
 
     # Retornar todos los recursos creados para que otros módulos los usen
