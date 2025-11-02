@@ -3,16 +3,14 @@ import pulumi
 from pulumi_gcp import container, serviceaccount, projects
 
 def create_cluster(network):
-    """Crea un cluster GKE con auto-scaling configurado."""
+    """Crea un cluster GKE zonal sin auto-scaling nativo de GKE."""
     
-    #config = pulumi.Config()
     from pulumi_gcp import config as gcp_config
-    #project = config.require("project")
     project = gcp_config.project
-    #region = config.require("region")
     region = gcp_config.region
+    zone = "us-central1-a"  # Zona específica
     
-    # 1. CREAR UNA CUENTA DE SERVICIO PARA EL CLUSTER
+    # 1. CREAR CUENTA DE SERVICIO PARA EL CLUSTER
     cluster_service_account = serviceaccount.Account(
         "cluster-service-account",
         account_id="cia-gke-sa",
@@ -21,16 +19,13 @@ def create_cluster(network):
     )
 
     # 2. ASIGNAR ROLES IAM A LA CUENTA DE SERVICIO
-    # Rol: Editor de Compute Engine (para gestionar nodos)
     compute_editor = projects.IAMMember(
         "cluster-compute-editor",
         project=project,
-        #role="roles/compute.editor",
         role="roles/compute.instanceAdmin.v1",
         member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
     )
     
-    # Rol: Viewer de Monitoring (para métricas de auto-scaling)
     monitoring_viewer = projects.IAMMember(
         "cluster-monitoring-viewer", 
         project=project,
@@ -38,7 +33,6 @@ def create_cluster(network):
         member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
     )
     
-    # Rol: Admin de Storage (para acceder a Cloud Storage)
     storage_admin = projects.IAMMember(
         "cluster-storage-admin",
         project=project,
@@ -46,51 +40,44 @@ def create_cluster(network):
         member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
     )
 
-
-    # 3. CREAR EL CLUSTER GKE
+    # 3. CREAR EL CLUSTER GKE ZONAL
     cluster = container.Cluster(
         "autoscale-cluster",
         name="autoscale-cluster",
-        description="Cluster GKE para autoscaling con Karpenter",
-        location=region,  # Usar región (cluster regional)
-        initial_node_count=1,  # Un nodo inicial
+        description="Cluster GKE zonal para autoscaling personalizado",
+        location=zone,  # ✅ ZONA ESPECÍFICA, NO REGIÓN
+        initial_node_count=1,
+
+        deletion_protection=False,
+        
+        # ✅ ELIMINAR NODE POOL POR DEFECTO - USAREMOS NUESTRO PROPIO
+        # remove_default_node_pool=True,
         
         # Configuración de red
         network=network["vpc"].name,
         subnetwork=network["subnet"].name,
         
-        # Configuración de IPs privadas (más seguro)
+        # Configuración de IPs privadas
         private_cluster_config={
             "enable_private_nodes": True,
-            "enable_private_endpoint": False,  # Permitir acceso público al endpoint
+            "enable_private_endpoint": False,
             "master_ipv4_cidr_block": "172.16.0.0/28"
         },
         
-        # Configuración del node pool por defecto (mínimo)
-        node_config={
-            "service_account": cluster_service_account.email,
-            "oauth_scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-            ],
-            "machine_type": "e2-small",  # Máquina económica para inicio
-            "disk_size_gb": 20,
-            "disk_type": "pd-standard",
-        },
-        
-        # Habilitar auto-scaling del control plane
-        enable_autopilot=False,  # Usamos modo estándar para más control
+        # Modo estándar para control total
+        enable_autopilot=False,
         
         # Configuración de mantenimiento
         maintenance_policy={
             "daily_maintenance_window": {
-                "start_time": "03:00"  # Ventana de mantenimiento a las 3 AM
+                "start_time": "03:00"
             }
         },
         
-        # Habilitar características necesarias para Karpenter
+        # Habilitar características para nuestro auto-scaling
         addons_config={
             "horizontal_pod_autoscaling": {
-                "disabled": False
+                "disabled": False  # ✅ Para nuestro HPA personalizado
             },
             "http_load_balancing": {
                 "disabled": False
@@ -99,20 +86,21 @@ def create_cluster(network):
         
         # Configuración de la versión
         release_channel={
-            "channel": "REGULAR"  # Canal estable
+            "channel": "REGULAR"
         },
     )
 
-
-    # 4. CREAR UN NODE POOL INICIAL (mínimo para que funcione el cluster)
-    initial_node_pool = container.NodePool(
-        "initial-node-pool",
-        name="initial-pool",
+    # 4. CREAR NODE POOL BÁSICO SIN AUTO-SCALING DE GKE
+    node_pool = container.NodePool(
+        "main-node-pool",
+        name="main-node-pool",
         cluster=cluster.name,
-        location=region,
+        location=zone,  # ✅ MISMA ZONA QUE EL CLUSTER
         initial_node_count=1,
+        node_count=1,  # ✅ NÚMERO FIJO - SIN AUTO-SCALING DE GKE
+        
         node_config={
-            "preemptible": True,  # Instancias que pueden ser terminadas (más baratas)
+            "preemptible": True,
             "machine_type": "e2-small",
             "disk_size_gb": 20,
             "disk_type": "pd-standard",
@@ -121,22 +109,23 @@ def create_cluster(network):
                 "https://www.googleapis.com/auth/cloud-platform"
             ],
             "labels": {
-                "workload": "system"
-            }
+                "workload": "default"
+            },
+            "tags": ["gke-node", "cia-project"]
         },
+        
+        # ✅ SOLO MANTENIMIENTO AUTOMÁTICO, NO AUTO-SCALING
         management={
             "auto_repair": True,
             "auto_upgrade": True
-        },
-        autoscaling={
-            "min_node_count": 1,
-            "max_node_count": 3
         }
+        
+        # ❌ NO INCLUIR SECCIÓN autoscaling - LO MANEJAREMOS NOSOTROS
     )
 
     # Retornar los recursos creados
     return {
         "cluster": cluster,
-        "service_account": cluster_service_account,
-        "initial_node_pool": initial_node_pool
+        "node_pool": node_pool,
+        "service_account": cluster_service_account
     }
