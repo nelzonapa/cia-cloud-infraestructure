@@ -1,0 +1,51 @@
+# stress.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-stress-test
+  namespace: default
+spec:
+  replicas: 1 # Inicia en 1 (o el que quieras probar)
+  selector:
+    matchLabels:
+      app: stress-test
+  template:
+    metadata:
+      labels:
+        app: stress-test
+    spec:
+      containers:
+      - name: stress-container
+        image: ubuntu:20.04
+        command: ["/bin/bash"]
+        args: 
+          # Estresa 2 CPUs por 300 segundos (5 minutos)
+          - "-c"
+          - "apt-get update && apt-get install -y stress && stress --cpu 2 --timeout 300s" 
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m" 
+            memory: "256Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: stress-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cpu-stress-test
+  minReplicas: 1
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50 # Escalará cuando el uso promedio sea >50%

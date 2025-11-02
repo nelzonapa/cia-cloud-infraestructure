@@ -1,0 +1,6 @@
+pulumi destroy
+pulumi up
+gcloud container clusters list --region=us-central1
+gcloud container clusters get-credentials autoscale-cluster --region=us-central1
+kubectl get nodes
+kubectl get all --all-namespaces
