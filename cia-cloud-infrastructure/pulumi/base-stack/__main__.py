@@ -21,6 +21,9 @@ gke_cluster = cluster.create_cluster(network)
 # Desplegar la aplicación IoT
 iot_app = application.deploy_iot_application(gke_cluster)
 
+# Desplegar el autoscaler personalizado
+autoscaler = application.deploy_custom_autoscaler(gke_cluster)
+
 # ----------------------------------------------------------------------
 # CONFIGURAR PROVEEDOR DE KUBERNETES
 # ----------------------------------------------------------------------
@@ -71,6 +74,7 @@ pulumi.export("cluster_endpoint", gke_cluster["cluster"].endpoint)
 pulumi.export("service_account", gke_cluster["service_account"].email)
 pulumi.export("app_service", iot_app["service"].metadata["name"])
 pulumi.export("loadbalancer_ip", iot_app["ingress"].status.apply(lambda s: s.load_balancer.ingress[0].ip if s.load_balancer.ingress else "Pending"))
+pulumi.export("autoscaler_deployed", autoscaler["deployment"].metadata["name"])
 
 # Comando para conectarse al cluster
 pulumi.export("connect_command", pulumi.Output.concat(
