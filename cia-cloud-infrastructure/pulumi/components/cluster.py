@@ -40,6 +40,32 @@ def create_cluster(network):
         member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
     )
 
+    # ✅ NUEVA ASIGNACIÓN: PERMISO PARA LEER IMÁGENES DE GCR (STORAGE)
+    storage_object_viewer = projects.IAMMember(
+        "cluster-gcr-pull-viewer", # Nuevo nombre del recurso Pulumi
+        project=project,
+        # Rol necesario para que el nodo lea objetos (imágenes) de GCR/Cloud Storage.
+        role="roles/storage.objectViewer", 
+        member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
+    )
+
+
+    # Permiso CRÍTICO: Para leer imágenes de Google Container Registry
+    gcr_pull_permission = projects.IAMMember(
+        "cluster-gcr-pull",
+        project=project,
+        role="roles/storage.objectViewer",  # Este permiso permite leer de GCR
+        member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
+    )
+
+    # Permiso adicional: Artifact Registry Reader (para futuras imágenes)
+    artifact_registry_reader = projects.IAMMember(
+        "cluster-artifact-registry-reader",
+        project=project,
+        role="roles/artifactregistry.reader",
+        member=cluster_service_account.email.apply(lambda email: f"serviceAccount:{email}")
+    )
+
     # 3. CREAR EL CLUSTER GKE ZONAL
     cluster = container.Cluster(
         "autoscale-cluster",
@@ -100,7 +126,7 @@ def create_cluster(network):
         cluster=cluster.name,
         location=zone,  # ✅ MISMA ZONA QUE EL CLUSTER
         # initial_node_count=1, # ❌ Eliminado para evitar conflicto con node_count
-        node_count=1,  # ✅ NÚMERO FIJO - SIN AUTO-SCALING DE GKE
+        node_count=2,  # ✅ NÚMERO FIJO - SIN AUTO-SCALING DE GKE
         
         node_config={
             "preemptible": True,
@@ -114,7 +140,11 @@ def create_cluster(network):
             "labels": {
                 "workload": "default"
             },
-            "tags": ["gke-node", "cia-project"]
+            "tags": ["gke-node", "cia-project"],
+            # AGREGAR WORKLOAD IDENTITY CONFIG
+            "workload_metadata_config": {
+                "mode": "GKE_METADATA"  # Esto habilita Workload Identity
+            }
         },
         
         # ✅ SOLO MANTENIMIENTO AUTOMÁTICO, NO AUTO-SCALING

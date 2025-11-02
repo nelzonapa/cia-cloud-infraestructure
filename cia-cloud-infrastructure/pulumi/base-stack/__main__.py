@@ -9,13 +9,17 @@ sys.path.append(parent_dir)
 
 # Imports
 from pulumi_kubernetes import provider as kubernetes_provider
-from components import networking, cluster
+from components import networking, cluster, application
 
 # Crear la infraestructura de red
 network = networking.create_network()
 
 # Crear el cluster GKE (con autoscaling nativo)
 gke_cluster = cluster.create_cluster(network)
+
+
+# Desplegar la aplicación IoT
+iot_app = application.deploy_iot_application(gke_cluster)
 
 # ----------------------------------------------------------------------
 # CONFIGURAR PROVEEDOR DE KUBERNETES
@@ -65,6 +69,8 @@ pulumi.export("vpc_id", network["vpc"].id)
 pulumi.export("cluster_name", gke_cluster["cluster"].name)
 pulumi.export("cluster_endpoint", gke_cluster["cluster"].endpoint)
 pulumi.export("service_account", gke_cluster["service_account"].email)
+pulumi.export("app_service", iot_app["service"].metadata["name"])
+pulumi.export("loadbalancer_ip", iot_app["ingress"].status.apply(lambda s: s.load_balancer.ingress[0].ip if s.load_balancer.ingress else "Pending"))
 
 # Comando para conectarse al cluster
 pulumi.export("connect_command", pulumi.Output.concat(
