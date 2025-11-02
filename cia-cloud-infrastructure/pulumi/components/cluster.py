@@ -51,7 +51,7 @@ def create_cluster(network):
         deletion_protection=False,
         
         # ✅ ELIMINAR NODE POOL POR DEFECTO - USAREMOS NUESTRO PROPIO
-        # remove_default_node_pool=True,
+        remove_default_node_pool=True,
         
         # Configuración de red
         network=network["vpc"].name,
@@ -64,8 +64,7 @@ def create_cluster(network):
             "master_ipv4_cidr_block": "172.16.0.0/28"
         },
         
-        # Modo estándar para control total
-        enable_autopilot=False,
+        # MODO ESTÁNDAR PARA CONTROL TOTAL. Omitimos 'enable_autopilot=False' para resolver el conflicto.
         
         # Configuración de mantenimiento
         maintenance_policy={
@@ -96,7 +95,7 @@ def create_cluster(network):
         name="main-node-pool",
         cluster=cluster.name,
         location=zone,  # ✅ MISMA ZONA QUE EL CLUSTER
-        initial_node_count=1,
+        # initial_node_count=1, # ❌ Eliminado para evitar conflicto con node_count
         node_count=1,  # ✅ NÚMERO FIJO - SIN AUTO-SCALING DE GKE
         
         node_config={
