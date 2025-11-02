@@ -56,6 +56,10 @@ def create_cluster(network):
         # Configuración de red
         network=network["vpc"].name,
         subnetwork=network["subnet"].name,
+
+        workload_identity_config={
+            "workload_pool": f"{project}.svc.id.goog",
+        },
         
         # Configuración de IPs privadas
         private_cluster_config={
